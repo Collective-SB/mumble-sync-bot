@@ -3,6 +3,7 @@ from discord.ext import commands
 import InterVars as v
 import contextlib
 import io
+import Logger
 
 class DiscordManager():
     prefix = "#"
@@ -17,7 +18,10 @@ class DiscordManager():
     async def on_ready():
         await v.botManager.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="code be written"))
         v.botManager.ready = True
-        print("Logged in as " + v.botManager.bot.user.name)
+        Logger.log("Logged in as " + v.botManager.bot.user.name)
+
+        # bad practice but eh
+        await Logger.pushLogLoop()
 
 class Utilities(commands.Cog):
     """General utilities"""
@@ -26,7 +30,6 @@ class Utilities(commands.Cog):
         await ctx.send("Pong! Latency is " + str(round(v.botManager.bot.latency * 1000)) + "ms")
 
     @commands.command()
-    #FIXME add auth
     async def eval(self, ctx, *, code):
         author = ctx.message.author
         if author.id == 318756837266554881:
@@ -38,6 +41,7 @@ class Utilities(commands.Cog):
                 return await ctx.send(f"```python{e.__class__.__name__}: {e}```")
             await ctx.send(f'```{str_obj.getvalue()}```')
         else:
+            Logger.log("Unauthorised eval attempt by " + str(ctx.message.author.id))
             image = discord.File("nothingHere.jpg")
             await ctx.send("No u", file=image)
 
@@ -48,5 +52,3 @@ def getToken():
 def run():
     v.botManager = DiscordManager()
     v.botManager.bot.run(getToken())
-
-run()
