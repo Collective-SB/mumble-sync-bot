@@ -1,0 +1,2 @@
+configReader = None
+botManager = None
