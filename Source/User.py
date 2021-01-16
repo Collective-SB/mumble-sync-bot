@@ -1,9 +1,9 @@
-class User(self, discordID, mumbleID, discordNick, mumbleNick, permissions):
+class User(self, discordID, mumbleID, discordNick, mumbleNick, permission):
     discordID = None
     mumbleID = None
     discordNick = None
     mumbleNick = None
-    permissions = []
+    permission = None
     
     def __init__(self, discordID, mumbleID, discordNick, mumbleNick, permissions):
         self.discordID = discordID

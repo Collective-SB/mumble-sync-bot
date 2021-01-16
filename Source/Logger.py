@@ -11,7 +11,14 @@ def log(text):
     text = str(text)
 
     print(text)
-    backlog.logs.append(now + " | " + text)
+
+    toAppend = now + " | " + text
+
+    if len(toAppend) > 1800:
+        warn("Could not log due to message being too large.")
+        return
+
+    backlog.logs.append(toAppend)
 
     if len(backlog.logs) > 10 and "**WARNING: LOGGING BUFFER IS LARGE. DELAYS MAY OCCUR WHEN LOGGING.**" not in backlog.logs:
         backlog.logs.append("**WARNING: LOGGING BUFFER IS LARGE. DELAYS MAY OCCUR WHEN LOGGING.**")
@@ -22,7 +29,14 @@ def warn(text):
     text = str(text)
 
     print("[WARN]" + text)
-    backlog.logs.append("**" + now + " | " + "[WARN] " + text + "**")
+
+    toAppend = "**" + now + " | " + "[WARN] " + text + "**"
+
+    if len(toAppend) > 1800:
+        warn("Could not log due to message being too large.")
+        return
+
+    backlog.logs.append(toAppend)
 
     if len(backlog.logs) > 10 and "**WARNING: LOGGING BUFFER IS LARGE. DELAYS MAY OCCUR WHEN LOGGING.**" not in backlog.logs:
         backlog.logs.append("**WARNING: LOGGING BUFFER IS LARGE. DELAYS MAY OCCUR WHEN LOGGING.**")
