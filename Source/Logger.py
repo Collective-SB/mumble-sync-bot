@@ -11,7 +11,7 @@ def log(text):
     text = str(text)
 
     print(text)
-
+    
     toAppend = now + " | " + text
 
     if len(toAppend) > 1800:

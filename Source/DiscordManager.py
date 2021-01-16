@@ -7,11 +7,16 @@ import Logger
 
 class DiscordManager():
     prefix = "#"
-    description = "work ffs"#f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
+    description = "desc"#f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
     ready = False
     bot = commands.Bot(command_prefix=prefix, description=description)
 
     admins = [318756837266554881]
+
+    def __init__(self):
+        Logger.log("Adding cogs")
+        self.bot.add_cog(Utilities())
+        Logger.log("Cogs added")
 
     @bot.event
     async def on_ready():
@@ -22,24 +27,17 @@ class DiscordManager():
         # bad practice but eh
         await Logger.pushLogLoop()
 
-    @bot.event
-    async def on_message(message):
-        if v.botManager.bot.user.mention in message.content.split():
-            await message.channel.send(f":eyes: I detect a ping. Use my prefix ``{v.botManager.bot.prefix}`` to run commands, like  ``{v.botManager.bot.prefix}help``")
-
     @bot.command()
-    async def work(ctx):
-        print("received cmd")
-        await ctx.send("please just work")
+    async def about(ctx):
+        await ctx.send("I EXIST")
 
 class Utilities(commands.Cog):
     """General utilities"""
     @commands.command()
     async def ping(self, ctx):
-        Logger.log("ping detected")
+        Logger.log("Running ping")
         await ctx.send("Pong! Latency is " + str(round(v.botManager.bot.latency * 1000)) + "ms")
 
-    #Haha stackoverflow goes brr
     @commands.command()
     async def eval(self, ctx, *, code):
         author = ctx.message.author
