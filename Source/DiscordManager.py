@@ -34,6 +34,10 @@ async def on_message(message):
 
     elif f'<@!{bot.user.id}>' in message.content:
         await message.channel.send(f"My prefix is ``{prefix}``! Use ``{prefix}help`` to get a list of commands.")    
+    
+    #elif "aHR0cHM6Ly9iaXQubHk" in message.content:
+    #    await message.channel.send("That looks like a token for authenticating with Mumble! That shouldn't be shared in public channels unless you 100% know what you're doing. It should only be shared with this bot in direct messages. Check the message that contained the token for information about what to do if you accidentally leak it.")
+    #    Logger.warn("<@318756837266554881> Possible token exposure at " + str(message))
     else:
         await bot.process_commands(message)
 
