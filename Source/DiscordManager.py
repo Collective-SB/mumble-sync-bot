@@ -4,6 +4,9 @@ import InterVars as v
 import Logger
 import contextlib
 import io
+import asyncio
+from threading import *
+import MumbleManager
 
 prefix = "#"
 description = f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
@@ -15,7 +18,6 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="code be written"))
     v.discordReady = True
     Logger.log("Logged in as " + bot.user.name)
-    bot.loop.create_task(Logger.pushLogLoop())
 
 @bot.command()
 async def ping(ctx):
@@ -36,6 +38,3 @@ async def eval(ctx, *, code):
 def getToken():
     with open("token.txt", "r") as f:
         return f.read()
-
-def run():
-    bot.run(getToken())
