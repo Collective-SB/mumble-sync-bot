@@ -6,6 +6,7 @@ import time
 from threading import *
 import DiscordManager
 import asyncio
+import utilities
 
 server = "161.97.89.8"
 nickname = "BridgeBot"
@@ -31,9 +32,9 @@ def new_message(msg):
 
 async def new_message_async(msg):
     name = v.mumble.users[msg.actor]["name"]
-    text = str(msg.message)
+    text = utilities.stripHTML(str(msg.message))
     toSend = f"""**{name}** in Mumble:
-    ``{text}``
+    {text}
     """
     print(str(toSend))
     await DiscordManager.bot.get_channel(799300636889186304).send(toSend)

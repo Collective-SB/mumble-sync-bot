@@ -7,6 +7,7 @@ import io
 import asyncio
 from threading import *
 import MumbleManager
+import utilities
 
 prefix = "#"
 description = f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
@@ -18,6 +19,21 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="code be written"))
     v.discordReady = True
     Logger.log("Logged in as " + bot.user.name)
+
+@bot.event
+async def on_message(message):
+    #message sync
+    if message.channel.id == 799300636889186304 and message.author.id != bot.user.id:
+        name = message.author.name
+        content = utilities.stripMarkdown(message.content)
+
+        toSend = f"<b>{name}</b> in Discord: {content}"
+
+        print(str(toSend))
+        v.mumble.channels[0].send_text_message(toSend)
+
+    else:
+        await bot.process_commands(message)
 
 @bot.command()
 async def ping(ctx):
