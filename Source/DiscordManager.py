@@ -32,6 +32,8 @@ async def on_message(message):
         print(str(toSend))
         v.mumble.channels[0].send_text_message(toSend)
 
+    elif f'<@!{bot.user.id}>' in message.content:
+        await message.channel.send(f"My prefix is ``{prefix}``! Use ``{prefix}help`` to get a list of commands.")    
     else:
         await bot.process_commands(message)
 
@@ -50,6 +52,29 @@ async def eval(ctx, *, code):
         except Exception as e:
             return await ctx.send(f"```python{e.__class__.__name__}: {e}```")
         await ctx.send(f'```{str_obj.getvalue()}```')
+
+@bot.command()
+async def about(ctx):
+    await ctx.send(f"You might be thinking of the ``{prefix}help`` command.")
+
+@bot.command()
+async def online(ctx):
+    online = v.mumble.users.count() -1
+    if online == 0:
+        await ctx.send("There are currently no users on the Mumble server.")
+
+    elif online == 1:
+        await ctx.send("There is currently 1 user on the Mumble server.")
+
+    elif utilities.isPow2(online):
+        await ctx.send(f"There is currently a nice, round number of people online - {str(online)}")
+
+    else:
+        await ctx.send(f"There are currently {str(online)} users on the Mumble server.")
+
+@bot.command()
+async def answer(ctx):
+    await ctx.send("42")
 
 def getToken():
     with open("token.txt", "r") as f:

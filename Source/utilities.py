@@ -33,6 +33,23 @@ __md.stripTopLevelTags = False
 def stripMarkdown(mark):
     return __md.convert(mark)
 
-# THIS DOES NOT SANITISE. DO NOT USE IT WHERE SECURITY IS IMPOTANT.
+# THIS DOES NOT SANITISE. DO NOT USE IT WHERE SECURITY IS IMPORTANT.
 def stripHTML(html):
     return re.sub('<[^<]+?>', '', html)
+
+def isValidDiscordID(id):
+    try:
+        int(id)
+    except:
+        return False
+
+    if len(str(id)) == 18 or len(str(id)) == 17 or len(str(id)) == 19:
+        return True
+    else:
+        return False
+    
+def isPow2(n):
+    if (n & (n-1) == 0) and n != 0:
+        return True
+    else:
+        return False
