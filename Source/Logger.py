@@ -1,6 +1,8 @@
-import InterVars as v
+import DiscordManager
 import time
+import asyncio
 import datetime
+import InterVars as v
 
 class backlog:
     logs = ["Logger Initialised"]
@@ -51,7 +53,7 @@ async def pushLogLoop():
             else:
                 break
 
-        if toSend != "" and v.botManager.ready == True:
-            await v.botManager.bot.get_channel(799300592270442546).send(toSend)
+        if toSend != "" and v.discordReady == True:
+            await DiscordManager.bot.get_channel(799300592270442546).send(toSend)
 
-        time.sleep(2)
+        await asyncio.sleep(2)

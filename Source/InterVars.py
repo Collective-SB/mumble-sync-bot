@@ -1,2 +1,1 @@
-configReader = None
-botManager = None
+discordReady = False
