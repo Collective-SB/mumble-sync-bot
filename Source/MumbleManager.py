@@ -98,6 +98,7 @@ async def auth_process(field, user):
 
     v.OpenAuthProcesses.append(user.get_property("user_id"))
    
+    #TODO: Split this into a separate pmQuery function that does everything for you including blocking and validation
     #WRITE TO A DICT WHO YOU'RE WAITING FOR RESPONSES FROM
     v.AuthenticationReplies[user.get_property("user_id")] = "NoResponse"
     #CHECK THE DICT TO SEE IF THE NEW_MESSAGE_ASYNC FUNCTION HAS RECORDED ANY REPLIES
@@ -134,7 +135,7 @@ If you did accidentally share it, disconnect and reconnect from the Mumble serve
 That will give you a new token and you can continue as normal. Once you've done that, contact IHave#7106 to make sure nobody used your token."""
     await userD.send(toSend)
 
-    #now wait for a response
+    #TODO: Split this into a separate pmQuery function that does everything for you including blocking and validation
     v.TokenReplies[user.get_property("user_id")] = "NoResponse"
 
     while True:
@@ -154,6 +155,8 @@ That will give you a new token and you can continue as normal. Once you've done 
             else:
                 user.send_text_message("Unfortunately that's invalid. You sent: " + str(content))
                 v.TokenReplies[user.get_property("user_id")] = "NoResponse"
+
+    #TODO remove the OpenAuthProcess
 
 async def new_message_async(msg):
     Logger.log(msg)
