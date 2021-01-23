@@ -1,6 +1,5 @@
 discordReady = False
 loop = None
 mumble = None
-AuthenticationReplies = {}
-TokenReplies = {}
 OpenAuthProcesses = []
+PendingReplies = []

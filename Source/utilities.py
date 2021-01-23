@@ -4,6 +4,8 @@ from markdown import Markdown
 from io import StringIO
 from html.parser import HTMLParser
 import re
+import DiscordManager
+import Logger
 
 def generateToken():
     #Base64'd Rickroll.
@@ -11,6 +13,9 @@ def generateToken():
     token = secrets.token_urlsafe(64)
 
     return base64.b64encode(bytes(easterEgg + " " + token, "ascii")).decode("ascii")
+
+def generateID(l):
+    return secrets.token_urlsafe(l)
 
 #patch the markdown module
 def unmark_element(element, stream=None):
@@ -37,17 +42,14 @@ def stripMarkdown(mark):
 def stripHTML(html):
     return re.sub('<[^<]+?>', '', html)
 
-def isValidDiscordID(id):
+async def isValidDiscordID(id):
     try:
-        int(id)
+        Logger.log("Checking if " + str(id) + " is valid.")
+        user = await DiscordManager.bot.fetch_user(int(id))
+        return True
     except:
         return False
 
-    if len(str(id)) == 18 or len(str(id)) == 17 or len(str(id)) == 19:
-        return True
-    else:
-        return False
-    
 def isPow2(n):
     if (n & (n-1) == 0) and n != 0:
         return True

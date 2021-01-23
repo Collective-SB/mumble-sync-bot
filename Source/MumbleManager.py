@@ -8,10 +8,19 @@ import DiscordManager
 import asyncio
 import utilities
 import Database
+import copy
+import inspect
 
 server = "161.97.89.8"
 nickname = "BridgeBot"
 passwd = ""
+
+class pendingReply():
+    def __init__(self, mumbleID):
+        self.mumbleID = mumbleID
+        self.hasResponse = False
+        self.responseText = None
+        self.id = utilities.generateID(32)
 
 async def connect():
     while v.discordReady == False:
@@ -40,6 +49,7 @@ def user_created(user):
     v.loop.create_task(user_created_async(user))
 
 async def user_created_async(user):
+    #TODO wrap the whole thing in a try/catch and terminate the process if shit goes wrong
     #PSUEDOCODE:
     #IF THEY AREN'T REGISTERED, TELL THEM TO REGISTER
     #IF THEY ARE REGISTERED:
@@ -82,36 +92,27 @@ async def user_created_async(user):
         else:
             # if they are on the system but haven't finished authenticating
             Logger.log(f"Restarting authentication for user who has not finished it. User: {str(user)}")
-            user.send_text_message("<b>Hmm, it seems that you're halfway through authenticating. We're going to have to restart that - please follow the instructions:</b>")
+            user.send_text_message("<b>Hmm, it seems that you're halfway through authenticating. Please continue what you were doing.</b>")
             await auth_process(field, user)
 
 async def syncRoles(field, user):
     a=1
 
 async def auth_process(field, user):
-    user.send_text_message("<h2>You're not authenticated here.</h2><p>To register, PM the \"BridgeBot\" with your Discord ID. Make sure to read the instructions!</p>")
-
-     #CHECK YOU DON'T HAVE DUPLICATE PROCESSES
+    #CHECK YOU DON'T HAVE DUPLICATE PROCESSES
     if user.get_property("user_id") in v.OpenAuthProcesses:
         Logger.log("Not creating auth process because one already exists.")
         return
 
+    user.send_text_message("<h2>You're not authenticated here.</h2>")
+
     v.OpenAuthProcesses.append(user.get_property("user_id"))
    
-    #TODO: Split this into a separate pmQuery function that does everything for you including blocking and validation
-    #WRITE TO A DICT WHO YOU'RE WAITING FOR RESPONSES FROM
-    v.AuthenticationReplies[user.get_property("user_id")] = "NoResponse"
-    #CHECK THE DICT TO SEE IF THE NEW_MESSAGE_ASYNC FUNCTION HAS RECORDED ANY REPLIES
-    while True:
-        await asyncio.sleep(0.2)
-        if v.AuthenticationReplies[user.get_property("user_id")] != "NoResponse":
-            response = v.AuthenticationReplies[user.get_property("user_id")]
-            if utilities.isValidDiscordID(response):
-                user.send_text_message("Discord ID has been received. Please check your Discord DMs for a verification token and follow the instructions sent to you.")
-                break
-            else:
-                user.send_text_message("Hmm, that doesn't seem like a valid Discord ID. Please try again, and check the instructions.")
-                v.AuthenticationReplies[user.get_property("user_id")] = "NoResponse"
+    response = await pmQuery("Please PM this bot your Discord ID. Do it by double clicking the bot in the menu on the right.",
+    user,
+    "Hmm, that doesn't seem like a valid Discord ID.",
+    "ID received. Check Discord for a PM.",
+    utilities.isValidDiscordID)
 
     #TODO now do PMing and hand off to Discord
     #GENERATE A TOKEN. WRITE TO THE SYSTEM:
@@ -135,33 +136,85 @@ If you did accidentally share it, disconnect and reconnect from the Mumble serve
 That will give you a new token and you can continue as normal. Once you've done that, contact IHave#7106 to make sure nobody used your token."""
     await userD.send(toSend)
 
-    #TODO: Split this into a separate pmQuery function that does everything for you including blocking and validation
-    v.TokenReplies[user.get_property("user_id")] = "NoResponse"
-
     while True:
+        response = await pmQuery("Please PM this bot the token you were sent on Discord.", user)
+        if response == token:
+            Logger.log("User " + str(userToLog) + " accepted and authenticated.")
+            
+            query = {"mumbleID" : toInsert.get("mumbleID"), "discordID" : toInsert.get("discordID")}
+            newvalues = { "$set": { "hasAuthenticated" : True, "syncToken" : None}}
+            Database.users.update_one(query, newvalues)
+
+            user.send_text_message("Welcome to Collective's Mumble server! You have been succesfully authenticated and you should be given access in a moment.")
+            await userD.send("Authentication complete. Token automatically expired.")
+            await userD.send("<:weareone:802506924083511306>")
+            break
+        else:
+            user.send_text_message("Unfortunately that token is invalid :(")
+
+    #remove the open process
+    v.OpenAuthProcesses.remove(user.get_property("user_id"))
+
+async def pmQuery(requestText, mumbleUserObj, incorrectAnswerText=None, successMessage=None, verificationCallback=None):
+    mumbleID = mumbleUserObj.get_property("user_id")
+    
+    _pendingReply = pendingReply(mumbleID)
+
+    v.PendingReplies.append(_pendingReply)
+
+    resp = None
+
+    mumbleUserObj.send_text_message(requestText)
+
+    if verificationCallback != None:
+        isVerificationAsync = inspect.iscoroutinefunction(verificationCallback)
+
+    while resp == None:
         await asyncio.sleep(0.2)
-        if v.TokenReplies[user.get_property("user_id")] != "NoResponse":
-            content = v.TokenReplies[user.get_property("user_id")]
+        for reply in v.PendingReplies:
+            if reply.hasResponse == True and reply.mumbleID == mumbleID:
+                resp = reply.responseText
 
-            if content == token:
-                Logger.log("User " + str(userToLog) + " accepted and authenticated.")
-                query = {"mumbleID" : toInsert.get("mumbleID"), "discordID" : toInsert.get("discordID")}
-                newvalues = { "$set": { "hasAuthenticated" : True, "syncToken" : None}}
-                Database.users.update_one(query, newvalues)
+                if verificationCallback == None:
+                    break
 
-                user.send_text_message("You have been succesfully authenticated. Your roles should be synced in a moment...")
-                await userD.send("Authentication complete. Your token has automatically expired.")
-                break
-            else:
-                user.send_text_message("Unfortunately that's invalid. You sent: " + str(content))
-                v.TokenReplies[user.get_property("user_id")] = "NoResponse"
+                if isVerificationAsync:
+                    verificationCheck = await verificationCallback(resp)
+                else:
+                    verificationCallback = verificationCallback(resp)
 
-    #TODO remove the OpenAuthProcess
+                if verificationCheck:
+                    break
+
+                else:
+                    mumbleUserObj.send_text_message(incorrectAnswerText)
+                    resp = None
+                    
+                    reply.hasResponse = False
+                    reply.responseText = "If you see this, something broke - badly. Tell IHave to fix his bot."
+
+    if successMessage != None:
+        mumbleUserObj.send_text_message(successMessage)    
+    Logger.log("Got response to query: " + str(resp))
+
+    await deletePendingReply(_pendingReply)
+    return resp
+
+async def deletePendingReply(_pendingReply):
+    # I feel like there's a bug here but I also can't be bothered to make a lock system on that list
+    pendingRepliesCopy = copy.deepcopy(v.PendingReplies)
+    i = 0
+    for reply in pendingRepliesCopy:
+        if reply.id == _pendingReply.id:
+            v.PendingReplies.pop(i)
+            break
+
+        i = i + 1
 
 async def new_message_async(msg):
     Logger.log(msg)
     Logger.log(msg.channel_id)
-    if msg.channel_id == 0:
+    if msg.channel_id == [0]:
         name = v.mumble.users[msg.actor]["name"]
         text = utilities.stripHTML(str(msg.message))
         toSend = f"""**{name}** in Mumble:
@@ -171,12 +224,11 @@ async def new_message_async(msg):
         await DiscordManager.bot.get_channel(799300636889186304).send(toSend)
 
     elif msg.channel_id == []:
-        try:
-            if v.AuthenticationReplies[v.mumble.users[msg.actor].get_property("user_id")] == "NoResponse":
-                v.AuthenticationReplies[v.mumble.users[msg.actor].get_property("user_id")] = utilities.stripHTML(msg.message)
+        Logger.log(v.PendingReplies)
+        userID = v.mumble.users[msg.actor].get_property("user_id")
 
-            if v.TokenReplies[v.mumble.users[msg.actor].get_property("user_id")] == "NoResponse":
-                v.TokenReplies[v.mumble.users[msg.actor].get_property("user_id")] = utilities.stripHTML(msg.message)
-        except KeyError:
-            Logger.log("KeyError in token/ID receive")
-            pass
+        for reply in v.PendingReplies:
+            if reply.mumbleID == userID:
+                reply.responseText = utilities.stripHTML(str(msg.message))
+                reply.hasResponse = True
+                Logger.log("Added to pending response list.")
