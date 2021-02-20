@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 Source/token.txt
 private.pem
+Source/mumbleToken.txt

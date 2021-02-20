@@ -1,3 +1,4 @@
+from pymongo import database
 import Logger
 import InterVars as v
 import Database
@@ -22,19 +23,19 @@ class pendingReply():
         self.responseText = None
         self.id = utilities.generateID(32)
 
+def getToken():
+    with open("mumbleToken.txt") as m:
+        return m.read().replace("\n", "")
+
 async def connect():
     while v.discordReady == False:
         await asyncio.sleep(0.2)
 
-    v.mumble = pymumble_py3.Mumble(server, nickname, password=passwd, reconnect=True)
+    v.mumble = pymumble_py3.Mumble(server, nickname, password=passwd, reconnect=True, tokens=[getToken()])
 
     v.mumble.start()
 
     v.mumble.is_ready()
-
-    #if unregistered, register
-    if v.mumble.users.myself.get_property('user_id') == None:
-        v.mumble.users.myself.register()
 
     v.mumble.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_TEXTMESSAGERECEIVED, new_message)
     v.mumble.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_USERCREATED, user_created)
@@ -97,7 +98,7 @@ Once you've done that, disconnect and reconnect from the server and you'll be ab
 <h2> Authentication OK </h2>
 <i> Running role resync </i>
 </div>""")
-            await syncRoles(field, user)
+            await syncRoles()
 
         else:
             # if they are on the system but haven't finished authenticating
@@ -105,8 +106,64 @@ Once you've done that, disconnect and reconnect from the server and you'll be ab
             user.send_text_message("<b>Hmm, it seems that you're halfway through authenticating. Please continue what you were doing.</b>")
             await auth_process(field, user)
 
-async def syncRoles(field, user):
-    a=1
+async def syncRoles():
+    Logger.log("Syncing roles")
+
+    allowedMumbleIDs = []
+
+    guilds = Database.guilds.find()
+    for guildID in guilds:
+        guild = DiscordManager.bot.get_guild(guildID["guildID"])
+        #get list of allowed roles
+        allowedRoles = []
+        for role in Database.allowedRoles.find():
+            allowedRoles.append(role["discordID"])
+        
+        #write down all allowed mumble IDs by iterating over stored users
+        users = Database.users.find()
+        
+        for user in users:
+            Logger.log("user is " + str(user["discordID"]))
+            discordUserObj = guild.get_member(int(user["discordID"])) #get obj
+            Logger.log("obj is " + str(discordUserObj))
+            if discordUserObj:
+                Logger.log("obj exists")
+                hasAllowedRole = False
+                for userRole in discordUserObj.roles:
+                    if userRole.id in allowedRoles:
+                        hasAllowedRole = True
+                        break
+
+                if hasAllowedRole and user["hasAuthenticated"]:
+                    allowedMumbleIDs.append(user["mumbleID"])
+
+    Logger.log("Allowed IDs: " + str(allowedMumbleIDs))
+
+    main_channel = v.mumble.channels[2]
+
+    main_channel.get_acl()
+
+    for ignore, uobj in v.mumble.users.items():
+        uid = None
+        try:
+            uid = uobj["user_id"]
+        except KeyError:
+            pass
+
+        if uid:
+            if uid in allowedMumbleIDs:
+                Logger.log("Adding " + str(uid) + " to authorised")
+                main_channel.acl.add_user("bot-sync-authorised", uid)
+            else:
+                try:
+                    Logger.log("Removing " + str(uid) + " from authorised")
+                    main_channel.acl.del_user("bot-sync-authorised", uid)
+                except ValueError:
+                    pass
+    
+    #get mumble list
+    #go iterate over them
+    #if their ACL and allowed IDs doesn't match, make them match
 
 async def auth_process(field, user):
     #CHECK YOU DON'T HAVE DUPLICATE PROCESSES
@@ -135,7 +192,6 @@ The process goes like this:
     "ID received. Check Discord for a PM.",
     utilities.isValidDiscordID)
 
-    #TODO now do PMing and hand off to Discord
     #GENERATE A TOKEN. WRITE TO THE SYSTEM:
     token = utilities.generateToken()
     toInsert = {"discordID" : response, "mumbleID" : user.get_property("user_id"), "syncToken" : token, "hasAuthenticated": False}
@@ -143,6 +199,7 @@ The process goes like this:
     userToLog["syncToken"] = "[REDACTED]"
     Logger.log("Writing: " + str(userToLog))
 
+    #TODO turn this into an upsert so stuff doesn't break when they register under a new user
     Database.users.insert_one(toInsert)
     #THEN PM THEM WITH THE TOKEN AND WAIT FOR REPLIES
     userD = await DiscordManager.bot.fetch_user(int(response))
@@ -172,6 +229,8 @@ That will give you a new token and you can continue as normal. Once you've done 
             break
         else:
             user.send_text_message("Unfortunately that token is invalid :(")
+
+    await syncRoles()
 
     #remove the open process
     v.OpenAuthProcesses.remove(user.get_property("user_id"))

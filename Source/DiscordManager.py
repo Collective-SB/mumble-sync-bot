@@ -12,7 +12,11 @@ import utilities
 
 prefix = "#"
 description = f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
-bot = commands.Bot(command_prefix=prefix, description=description)
+
+intents = discord.Intents.default()
+intents.members = True
+
+bot = commands.Bot(command_prefix=prefix, description=description, intents=intents)
 admins = [318756837266554881]
 
 @bot.event
@@ -24,6 +28,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     #message sync
+    #TODO don't hardcode
     if message.channel.id == 799300636889186304 and message.author.id != bot.user.id:
         name = message.author.name
         content = utilities.stripMarkdown(message.content)
@@ -127,6 +132,37 @@ async def removeAllowedRole(ctx, _id : int):
 
     await ctx.send(embed=makeFancyEmbed("Success", f"Deleted {str(deletion.deleted_count)} documents"))
     await ctx.send(embed=makeAuthedRolesEmbed())
+
+@bot.command()
+async def addGuild(ctx, _id : int):
+    if ctx.message.author.id in admins:
+        db.guilds.insert_one({"guildID" : _id})
+        await ctx.send(embed=makeFancyEmbed("Success", "Done"))
+    
+@bot.command()
+async def removeGuild(ctx, _id : int):
+    if ctx.message.author.id in admins:
+        db.guilds.delete_many({"guildID" : _id})
+        await ctx.send(embed=makeFancyEmbed("Success", "Done"))
+
+@bot.command()
+async def listGuilds(ctx):
+    if ctx.message.author.id in admins:
+        guildList = db.guilds.find({})
+
+        embed = discord.Embed(title="Guild List", color=0xce0000)
+
+        for guild in guildList:
+            embed.add_field(name="Guild", value=guild["guildID"])
+
+        embed.set_footer(text="Discord Link by IHave")
+
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def forceSync(ctx):
+    await MumbleManager.syncRoles()
+    await ctx.send(embed=makeFancyEmbed("Forced Sync", "Synced Mumble."))
 
 def getToken():
     with open("token.txt", "r") as f:
