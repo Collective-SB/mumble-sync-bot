@@ -67,7 +67,17 @@ async def user_created_async(user):
 
     # If unregistered, tell them to register
     if (mumbleID == None):
-        user.send_text_message("<h2> You must be registered with Mumble to continue. Register then reconnect to continue.</h2>Consult the installation guide for help.")
+        toSend = """<h2>
+Welcome to the Collective mumble server! Please read these instructions carefully: </h2>
+You are not yet authenticated. This means we don't know who you actually are, so you don't have access to anything yet.
+In order to authenticate you first need to register your account so people can't use your username in the future. To do this:
+1. Click "self" at the top bar.
+2. Click "register".
+3. Click "OK" to keeping your name.
+
+Once you've done that, disconnect and reconnect from the server and you'll be able to carry on with the authentication process.
+"""
+        user.send_text_message(toSend)
 
     # if registered, continue.
     else:
@@ -104,11 +114,22 @@ async def auth_process(field, user):
         Logger.log("Not creating auth process because one already exists.")
         return
 
-    user.send_text_message("<h2>You're not authenticated here.</h2>")
+    await send_with_newlines(user, """<h2>You're not authenticated here.</h2>
+Now you're registered, you need to prove to us that you're the same person as the Discord user with the same name. This shouldn't take long!
+
+The process goes like this:
+1. I will ask you to send me your Discord ID. To get this, enable developer mode in the settings then right click on your name anywhere and click "copy ID. If you need help getting your ID, feel free to ask on Discord.
+
+2. I will send you a token to your Discord account via a private message. This token is <b> secret </b> so don't share it. Instead, copy it.
+
+3. Take the token you copied and PM it to the <b>Mumble side</b> of the bot, like you did with the ID earlier. Make sure it's the bot you're PMing!
+
+4. You should be done! If you have the correct Discord roles you should be shortly given access.
+""")
 
     v.OpenAuthProcesses.append(user.get_property("user_id"))
    
-    response = await pmQuery("Please PM this bot your Discord ID. Do it by double clicking the bot in the menu on the right.",
+    response = await pmQuery("Please PM this bot your Discord ID. Open a PM it by double clicking the bot in the menu on the right.",
     user,
     "Hmm, that doesn't seem like a valid Discord ID.",
     "ID received. Check Discord for a PM.",
@@ -232,3 +253,9 @@ async def new_message_async(msg):
                 reply.responseText = utilities.stripHTML(str(msg.message))
                 reply.hasResponse = True
                 Logger.log("Added to pending response list.")
+
+async def send_with_newlines(user, text):
+    text = text.split("\n")
+    for line in text:
+        user.send_text_message(line)
+        await asyncio.sleep(0.5)
