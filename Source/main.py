@@ -1,3 +1,5 @@
+#import is important, ensures it's initialised
+import Database
 import DiscordManager
 from threading import *
 import InterVars as v

@@ -9,6 +9,8 @@ import asyncio
 from threading import *
 import MumbleManager
 import utilities
+import os
+import sys
 
 prefix = "#"
 description = f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
@@ -18,6 +20,8 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=prefix, description=description, intents=intents)
 admins = [318756837266554881]
+MESSAGE_SYNC_CHANNEL = db.getConfig("messageSyncChannel")
+MAIN_MUMBLE_CHANNEL_ID = db.getConfig("mainMumbleChannel")
 
 @bot.event
 async def on_ready():
@@ -28,15 +32,14 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     #message sync
-    #TODO don't hardcode
-    if message.channel.id == 799300636889186304 and message.author.id != bot.user.id:
+    if message.channel.id == MESSAGE_SYNC_CHANNEL and message.author.id != bot.user.id:
         name = message.author.name
         content = utilities.stripMarkdown(message.content)
 
         toSend = f"<b>{name}</b> in Discord: {content}"
 
         print(str(toSend))
-        v.mumble.channels[0].send_text_message(toSend)
+        v.mumble.channels[MAIN_MUMBLE_CHANNEL_ID].send_text_message(toSend)
 
     elif f'<@!{bot.user.id}>' in message.content:
         await message.channel.send(embed=makeFancyEmbed("Ping Detected!", f"My prefix is ``{prefix}``! Use ``{prefix}help`` to get a list of commands."))
@@ -46,6 +49,13 @@ async def on_message(message):
     #    Logger.warn("<@318756837266554881> Possible token exposure at " + str(message))
     else:
         await bot.process_commands(message)
+
+
+@bot.command()
+async def stopBot(ctx):
+    if ctx.message.author.id in admins:
+        await ctx.send("Stopping...")
+        sys.exit()
 
 @bot.command()
 async def ping(ctx):
@@ -62,6 +72,8 @@ async def eval(ctx, *, code):
         except Exception as e:
             return await ctx.send(f"python{e.__class__.__name__}: {e}")
         await ctx.send(f'{str_obj.getvalue()}')
+    else:
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
 
 @bot.command()
 async def about(ctx):
@@ -100,16 +112,20 @@ async def setAuthorised(ctx, member : discord.Member, allowed : bool):
         db.authorised.update_one(query, values, upsert=True)
 
         await ctx.send(embed=makeFancyEmbed("Update permissions", "On query " + str(query) + " setting values " + str(values)))
+    else:
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
 
 @bot.command()
 async def listAllowedRoles(ctx):
     if not checkIfAuthorised(ctx):
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
         return
     await ctx.send(embed=makeAuthedRolesEmbed())
 
 @bot.command()
 async def addAllowedRole(ctx, _id : int):
     if not checkIfAuthorised(ctx):
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
         return
     toInsert = {"$set" : {"discordID" : _id, "assigner" : ctx.message.author.id}}
     query = {"discordID" : _id}
@@ -121,6 +137,7 @@ async def addAllowedRole(ctx, _id : int):
 @bot.command()
 async def removeAllowedRole(ctx, _id : int):
     if not checkIfAuthorised(ctx):
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
         return
     query = {"discordID" : _id}
 
@@ -138,12 +155,16 @@ async def addGuild(ctx, _id : int):
     if ctx.message.author.id in admins:
         db.guilds.insert_one({"guildID" : _id})
         await ctx.send(embed=makeFancyEmbed("Success", "Done"))
+    else:
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
     
 @bot.command()
 async def removeGuild(ctx, _id : int):
     if ctx.message.author.id in admins:
         db.guilds.delete_many({"guildID" : _id})
         await ctx.send(embed=makeFancyEmbed("Success", "Done"))
+    else:
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
 
 @bot.command()
 async def listGuilds(ctx):
@@ -158,6 +179,8 @@ async def listGuilds(ctx):
         embed.set_footer(text="Discord Link by IHave")
 
         await ctx.send(embed=embed)
+    else:
+        await ctx.send(embed=makeFancyEmbed("Access Denied", "You do not have access to this command."))
 
 @bot.command()
 async def forceSync(ctx):

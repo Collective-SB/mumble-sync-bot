@@ -1,4 +1,3 @@
-from pymongo import database
 import Logger
 import InterVars as v
 import Database
@@ -39,6 +38,8 @@ async def connect():
 
     v.mumble.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_TEXTMESSAGERECEIVED, new_message)
     v.mumble.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_USERCREATED, user_created)
+
+    v.mumble.channels[Database.getConfig("mainMumbleChannel")].move_in()
 
     Logger.log("Mumble fully initialised")
     v.mumble.my_channel().send_text_message("Started bridge bot.")
@@ -123,11 +124,8 @@ async def syncRoles():
         users = Database.users.find()
         
         for user in users:
-            Logger.log("user is " + str(user["discordID"]))
             discordUserObj = guild.get_member(int(user["discordID"])) #get obj
-            Logger.log("obj is " + str(discordUserObj))
             if discordUserObj:
-                Logger.log("obj exists")
                 hasAllowedRole = False
                 for userRole in discordUserObj.roles:
                     if userRole.id in allowedRoles:
@@ -139,7 +137,8 @@ async def syncRoles():
 
     Logger.log("Allowed IDs: " + str(allowedMumbleIDs))
 
-    main_channel = v.mumble.channels[2]
+    main_channel = v.mumble.channels[Database.getConfig("mainMumbleChannel")]
+    root_channel = v.mumble.channels[0]
 
     main_channel.get_acl()
 
@@ -157,13 +156,12 @@ async def syncRoles():
             else:
                 try:
                     Logger.log("Removing " + str(uid) + " from authorised")
+                    #DO NOT REMOVE the move call. The del_user fails if they're still in the channel
+                    root_channel.move_in(uobj["session"])
                     main_channel.acl.del_user("bot-sync-authorised", uid)
-                except ValueError:
+                except ValueError as e:
+                    Logger.log("ValueError in auth removal")
                     pass
-    
-    #get mumble list
-    #go iterate over them
-    #if their ACL and allowed IDs doesn't match, make them match
 
 async def auth_process(field, user):
     #CHECK YOU DON'T HAVE DUPLICATE PROCESSES
@@ -199,8 +197,10 @@ The process goes like this:
     userToLog["syncToken"] = "[REDACTED]"
     Logger.log("Writing: " + str(userToLog))
 
-    #TODO turn this into an upsert so stuff doesn't break when they register under a new user
-    Database.users.insert_one(toInsert)
+    query = {"discordID" : response}
+    toInsertUpdate = {"$set" : toInsert}
+    Database.users.update_one(query, toInsertUpdate, upsert=True)
+
     #THEN PM THEM WITH THE TOKEN AND WAIT FOR REPLIES
     userD = await DiscordManager.bot.fetch_user(int(response))
     toSend = f"""Hello, I'm the Mumble Link bot. Here's your token:```
@@ -294,14 +294,14 @@ async def deletePendingReply(_pendingReply):
 async def new_message_async(msg):
     Logger.log(msg)
     Logger.log(msg.channel_id)
-    if msg.channel_id == [0]:
+    if msg.channel_id == [Database.getConfig("mainMumbleChannel")]:
         name = v.mumble.users[msg.actor]["name"]
         text = utilities.stripHTML(str(msg.message))
         toSend = f"""**{name}** in Mumble:
         {text}
         """
         Logger.log(str(toSend))
-        await DiscordManager.bot.get_channel(799300636889186304).send(toSend)
+        await DiscordManager.bot.get_channel(Database.getConfig("messageSyncChannel")).send(toSend)
 
     elif msg.channel_id == []:
         Logger.log(v.PendingReplies)
