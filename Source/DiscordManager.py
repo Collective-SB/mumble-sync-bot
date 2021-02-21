@@ -22,6 +22,7 @@ bot = commands.Bot(command_prefix=prefix, description=description, intents=inten
 admins = [318756837266554881]
 MESSAGE_SYNC_CHANNEL = db.getConfig("messageSyncChannel")
 MAIN_MUMBLE_CHANNEL_ID = db.getConfig("mainMumbleChannel")
+TEXT_CHANNEL_LINK = db.getConfig("mumbleSideChannelLink")
 
 @bot.event
 async def on_ready():
@@ -39,7 +40,7 @@ async def on_message(message):
         toSend = f"<b>{name}</b> in Discord: {content}"
 
         print(str(toSend))
-        v.mumble.channels[MAIN_MUMBLE_CHANNEL_ID].send_text_message(toSend)
+        v.mumble.channels[TEXT_CHANNEL_LINK].send_text_message(toSend)
 
     elif f'<@!{bot.user.id}>' in message.content:
         await message.channel.send(embed=makeFancyEmbed("Ping Detected!", f"My prefix is ``{prefix}``! Use ``{prefix}help`` to get a list of commands."))

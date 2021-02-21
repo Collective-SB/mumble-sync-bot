@@ -294,7 +294,7 @@ async def deletePendingReply(_pendingReply):
 async def new_message_async(msg):
     Logger.log(msg)
     Logger.log(msg.channel_id)
-    if msg.channel_id == [Database.getConfig("mainMumbleChannel")]:
+    if msg.channel_id == [Database.getConfig("mumbleSideChannelLink")]:
         name = v.mumble.users[msg.actor]["name"]
         text = utilities.stripHTML(str(msg.message))
         toSend = f"""**{name}** in Mumble:
