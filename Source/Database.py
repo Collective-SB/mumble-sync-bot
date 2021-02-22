@@ -18,5 +18,3 @@ def saveConfig(key, value):
 def getConfig(key):
     query = {"key" : key}
     return configs.find_one(query)["value"]
-
-saveConfig("mumbleSideChannelLink", 2)
