@@ -11,6 +11,7 @@ import MumbleManager
 import utilities
 import os
 import sys
+import config
 
 prefix = "#"
 description = f"A bot to sync Mumble and Discord. Use {prefix}help for help.\nMade by IHave for Collective."
@@ -189,8 +190,7 @@ async def forceSync(ctx):
     await ctx.send(embed=makeFancyEmbed("Forced Sync", "Synced Mumble."))
 
 def getToken():
-    with open("token.txt", "r") as f:
-        return f.read()
+    return config.DISCORD_BOT_TOKEN
 
 def makeAuthedRolesEmbed():
     embed = discord.Embed(title="Authorised Roles", color=0xce0000)

@@ -10,6 +10,7 @@ import utilities
 import Database
 import copy
 import inspect
+import config
 
 server = "161.97.89.8"
 nickname = "BridgeBot"
@@ -23,8 +24,7 @@ class pendingReply():
         self.id = utilities.generateID(32)
 
 def getToken():
-    with open("mumbleToken.txt") as m:
-        return m.read().replace("\n", "")
+    return config.MUMBLE_BOT_TOKEN
 
 async def connect():
     while v.discordReady == False:
