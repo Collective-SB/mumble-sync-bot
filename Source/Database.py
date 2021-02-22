@@ -1,8 +1,8 @@
 import pymongo
 import config
 
-client = pymongo.MongoClient(f"mongodb://{config.MONGO_USERNAME}:{config.MONGO_PASSWORD}@localhost:27017/")
-db = client["mumbleLink"]
+client = pymongo.MongoClient(config.MONGO_URL)
+db = client["mumble-link"]
 users = db["users"]
 allowedRoles = db["roles"]
 authorised = db["authorised"]
