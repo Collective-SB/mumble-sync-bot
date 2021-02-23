@@ -3,5 +3,4 @@ import os
 MUMBLE_BOT_TOKEN = os.environ["MUMBLE_BOT_TOKEN"]
 DISCORD_BOT_TOKEN = os.environ["DISCORD_BOT_TOKEN"]
 
-MONGO_USERNAME = os.environ["MONGO_USERNAME"]
-MONGO_PASSWORD = os.environ["MONGO_PASSWORD"]
+MONGO_URL = os.environ["MONGO_URL]
