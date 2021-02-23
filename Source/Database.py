@@ -16,5 +16,10 @@ def saveConfig(key, value):
     configs.update_one(query, data, upsert=True)
 
 def getConfig(key):
-    query = {"key" : key}
-    return configs.find_one(query)["value"]
+    try:
+        query = {"key" : key}
+        return configs.find_one(query)["value"]
+    except TypeError:
+        #this feels dirty
+        print("Importing from setup...")
+        import setup
