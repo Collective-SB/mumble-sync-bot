@@ -175,7 +175,7 @@ async def listGuilds(ctx):
         for guild in guildList:
             embed.add_field(name="Guild", value=guild["guildID"])
 
-        embed.set_footer(text="Discord Link by IHave")
+        embed.set_footer(text="Mumblecord by IHave")
 
         await ctx.send(embed=embed)
     else:
@@ -195,13 +195,13 @@ def makeAuthedRolesEmbed():
     for role in db.allowedRoles.find():
         embed.add_field(name="Role", value=f"<@&{role.get('discordID')}>")
 
-    embed.set_footer(text="Discord Link by IHave")
+    embed.set_footer(text="Mumblecord by IHave")
 
     return embed
 
 def makeFancyEmbed(title, text):
     embed = discord.Embed(title=title, description=text, color=0xce0000)
-    embed.set_footer(text="Discord Link by IHave")
+    embed.set_footer(text="Mumblecord by IHave")
     return embed
 
 def checkIfAuthorised(ctx):

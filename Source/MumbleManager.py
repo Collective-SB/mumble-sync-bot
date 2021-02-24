@@ -209,7 +209,7 @@ The process goes like this:
 
     #THEN PM THEM WITH THE TOKEN AND WAIT FOR REPLIES
     userD = await DiscordManager.bot.fetch_user(int(response))
-    toSend = f"""Hello, I'm the Mumble Link bot. Here's your token:```
+    toSend = f"""Hello, I'm the Mumblecord bot. Here's your token:```
 {token}
 ```Keep this safe and **don't tell anyone.**
 
