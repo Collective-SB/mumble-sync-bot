@@ -199,7 +199,7 @@ def makeAuthedRolesEmbed():
 
     return embed
 
-def makeFancyEmbed(title, text="nothing here"):
+def makeFancyEmbed(title, text):
     embed = discord.Embed(title=title, description=text, color=0xce0000)
     embed.set_footer(text="Discord Link by IHave")
     return embed

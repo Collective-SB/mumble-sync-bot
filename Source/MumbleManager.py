@@ -1,3 +1,4 @@
+from os import sync
 import Logger
 import InterVars as v
 import Database
@@ -65,6 +66,11 @@ async def user_created_async(user):
     mumbleID = user.get_property("user_id")
     if (mumbleID == 0):
         Logger.log("Not authenticating superuser")
+        return
+
+    if (Database.getConfig("DO_AUTHENTICATE") == False):
+        await send_with_newlines(user, Database.getConfig("NON_AUTHENTICATE_MESSAGE"))
+        await syncRoles()
         return
 
     # If unregistered, tell them to register
