@@ -1,0 +1,2 @@
+class v:
+    app = None
