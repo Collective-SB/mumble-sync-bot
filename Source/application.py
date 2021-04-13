@@ -7,26 +7,36 @@ import database
 import shared
 
 class Application():
-    def getConfig(self, name):
+    def get_config(self, name):
         return os.environ[name]
+
+    def init_perms(self):
+        for perm in self.perms:
+            dbPerms = self.db.permissions.find({})
+            exists = False
+            for i in dbPerms:
+                if i["name"] == perm:
+                    exists = True
+                    break
+
+            if not exists:
+                self.db.permissions.insert_one({"name" : perm, "holders" : []})
 
     def init(self):
         load_dotenv()
         self.perms = ["admin", "mumbleManager"]
         self.db = database.DB("mongodb://localhost:27017/")
-        self.discordToken = self.getConfig("discordToken")
-        self.mumbleToken = self.getConfig("mumbleToken")
-        self.ip = self.getConfig("mumbleIP")
-        self.nick = self.getConfig("mumbleNick")
+        self.init_perms()
+        self.discordToken = self.get_config("discordToken")
+        self.mumbleToken = self.get_config("mumbleToken")
+        self.ip = self.get_config("mumbleIP")
+        self.nick = self.get_config("mumbleNick")
         self.mumbleInstance = mumble.MumbleInstance(self.mumbleToken, self.ip, self.nick)
+        self.operatingDiscord = self.get_config("operatingDiscord")
 
     def start(self):
-        loop = asyncio.get_event_loop()
-
-        loop.create_task(self.mumbleInstance.start())
+        discordClient.client.loop.create_task(self.mumbleInstance.start())
         discordClient.client.run(self.discordToken)
-
-        loop.run_forever()
 
 if __name__ == "__main__":
     shared.v.app = Application()

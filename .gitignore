@@ -133,3 +133,6 @@ dmypy.json
 Source/token.txt
 private.pem
 Source/mumbleToken.txt
+Source/key.pem
+Source/cert.p12
+Source/cert.pem

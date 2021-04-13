@@ -1,5 +1,6 @@
 import pymongo
 import shared
+import logger
 
 class DB():
     def __init__(self, mongoURL):
@@ -8,12 +9,9 @@ class DB():
         self.tokens = self.db["tokens"]
         self.permissions = self.db["permissions"]
         self.hasInit = self.db["hasInit"]
-
-        for perm in shared.v.app.perms:
-            exists = self.permissions.count({"name" : perm}) > 0
-            if not exists:
-                self.permissions.insert_one({"name" : perm, "holders" : []})
+        self.accounts = self.db["accounts"]
+        self.links = self.db["links"]
 
         if self.hasInit.count({}) == 0:
-            print("Doing initial db init")
+            logger.log("Doing initial db init")
             self.hasInit.insert_one({"hasInit" : False}, {"hasInit" : True})
