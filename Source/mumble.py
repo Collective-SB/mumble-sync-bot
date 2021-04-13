@@ -7,8 +7,7 @@ import logger
 import discordClient
 
 class MumbleInstance():
-    def __init__(self, token, ip, nick):
-        self.token = token
+    def __init__(self, ip, nick):
         self.ip = ip
         self.nick = nick
         self.loop = asyncio.get_event_loop()
@@ -37,8 +36,23 @@ class MumbleInstance():
 
     def on_join(self, event):
         logger.log("Join Event: " + str(event))
+
         uid = event["user_id"]
-        discordClient.client.loop.create_task(self.sync(mumbleID=uid))
+
+        self.get_user_by_id(uid).send_text_message(shared.v.app.config.get("welcomeMessage"))
+        #discordClient.client.loop.create_task(self.sync(mumbleID=uid))
+
+    def addToGroup(self, groupName, mumbleID):
+        root = self.instance.channels[0]
+        root.get_acl()
+
+        root.acl.add_user(groupName, mumbleID)
+
+    def removeFromGroup(self, groupName, mumbleID):
+        root = self.instance.channels[0]
+        root.get_acl()
+
+        root.acl.del_user(groupName, mumbleID)
 
     def _newMessageCallback_(self, event):
         if hasattr(event, "session") and len(event.session) > 0:

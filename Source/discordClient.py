@@ -103,6 +103,12 @@ class Utility(commands.Cog):
             return await ctx.send(f"python{e.__class__.__name__}: {e}")
         await ctx.send(f'{str_obj.getvalue()}')
 
+    @holds("admin")
+    @commands.command()
+    async def config(self, ctx, key, value):
+        #TODO implement
+        await ctx.send("Command not yet implemented")
+
 class AccountLinking(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -221,3 +227,13 @@ class PermLinks(commands.Cog):
         shared.v.app.db.links.delete_many(query)
 
         await ctx.send(diffify("Done"))
+
+    @holds("mumbleManager")
+    @commands.command()
+    async def addToGroup(self, ctx):
+        shared.v.app.mumbleInstance.addToGroup("tempgroup", 45)
+
+    @holds("mumbleManager")
+    @commands.command()
+    async def removeFromGroup(self, ctx):
+        shared.v.app.mumbleInstance.removeFromGroup("tempgroup", 45)
