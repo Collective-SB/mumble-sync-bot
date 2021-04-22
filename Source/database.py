@@ -1,4 +1,3 @@
-from typing import KeysView
 import pymongo
 import shared
 import logger
