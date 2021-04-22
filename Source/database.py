@@ -4,7 +4,7 @@ import logger
 
 class DB():
     def __init__(self, mongoURL):
-        print(str("Initialising db with " + mongoURL))
+        print("Initialising db with " + mongoURL)
         self.client = pymongo.MongoClient(mongoURL)
         self.db = self.client["mumble-link"]
         self.tokens = self.db["tokens"]
