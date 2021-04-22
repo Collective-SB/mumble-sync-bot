@@ -103,12 +103,6 @@ class Utility(commands.Cog):
             return await ctx.send(f"python{e.__class__.__name__}: {e}")
         await ctx.send(f'{str_obj.getvalue()}')
 
-    @holds("admin")
-    @commands.command()
-    async def config(self, ctx, key, value):
-        #TODO implement
-        await ctx.send("Command not yet implemented")
-
 class AccountLinking(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -119,7 +113,7 @@ class AccountLinking(commands.Cog):
         shared.v.app.db.tokens.insert_one({"text" : token, "uid" : str(ctx.author.id), "created" : time.time()})
         await ctx.send(diffify("PMed you instructions."))
         await ctx.message.author.send(f"""
-Here is your token. DM it to the Mumble bot:
+Here is your token. DM it to the Mumble bot 'BridgeBot9000':
 ```
 {token}
 ```
@@ -210,7 +204,6 @@ class PermLinks(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    #TODO let you supply a symbol that all channels that have the ACL should start with
     @holds("mumbleManager")
     @commands.command()
     async def linkGroup(self, ctx, groupName, roleID):

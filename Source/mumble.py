@@ -1,10 +1,11 @@
-import pymumble_py3
+import pymumble.pymumble_py3 as pymumble
 import asyncio
 import shared
 import time
 import utilities
 import logger
 import discordClient
+from threading import *
 
 class MumbleInstance():
     def __init__(self, ip, nick):
@@ -13,7 +14,7 @@ class MumbleInstance():
         self.loop = asyncio.get_event_loop()
 
     async def start(self):
-        self.instance = pymumble_py3.Mumble(self.ip, self.nick, reconnect=True, certfile="cert.pem", keyfile="key.pem")
+        self.instance = pymumble.Mumble(self.ip, self.nick, reconnect=True, certfile="cert.pem", keyfile="key.pem")
 
         self.instance.start()
 
@@ -24,9 +25,9 @@ class MumbleInstance():
         self.instance.my_channel().send_text_message("Bridge bot initialised and connected.")
         logger.log("Bridge bot started")
 
-        self.instance.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_TEXTMESSAGERECEIVED, self._newMessageCallback_)
-        self.instance.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_USERCREATED, self.on_join)
-        self.instance.callbacks.set_callback(pymumble_py3.constants.PYMUMBLE_CLBK_ACLRECEIVED, self.acl_received)
+        self.instance.callbacks.set_callback(pymumble.constants.PYMUMBLE_CLBK_TEXTMESSAGERECEIVED, self._newMessageCallback_)
+        self.instance.callbacks.set_callback(pymumble.constants.PYMUMBLE_CLBK_USERCREATED, self.on_join)
+        self.instance.callbacks.set_callback(pymumble.constants.PYMUMBLE_CLBK_ACLRECEIVED, self.acl_received)
 
         while True:
             await asyncio.sleep(1)
@@ -40,19 +41,13 @@ class MumbleInstance():
         uid = event["user_id"]
 
         self.get_user_by_id(uid).send_text_message(shared.v.app.config.get("welcomeMessage"))
-        #discordClient.client.loop.create_task(self.sync(mumbleID=uid))
+        discordClient.client.loop.create_task(self.sync(mumbleID=uid))
 
-    def addToGroup(self, groupName, mumbleID):
-        root = self.instance.channels[0]
-        root.get_acl()
+    def del_user(self, channel, group, uid):
+        Thread(target=channel.acl.del_user, args=(group, uid)).start()
 
-        root.acl.add_user(groupName, mumbleID)
-
-    def removeFromGroup(self, groupName, mumbleID):
-        root = self.instance.channels[0]
-        root.get_acl()
-
-        root.acl.del_user(groupName, mumbleID)
+    def add_user(self, channel, group, uid):
+        Thread(target=channel.acl.add_user, args=(group, uid)).start()
 
     def _newMessageCallback_(self, event):
         if hasattr(event, "session") and len(event.session) > 0:
@@ -79,10 +74,8 @@ class MumbleInstance():
                 userObj.send_text_message("<b> Unfortunately, that token is expired. </b>")
                 return
 
-            #TODO:
-            #if they are registered, create account and expire token
             if not self.is_registered(userObj):
-                userObj.send_text_message("Please register beforehand. TODO link to instructions.")
+                userObj.send_text_message("Please register with Mumble beforehand. You can do this under 'self'.")
             else:
                 if shared.v.app.db.accounts.count({"discordID" : content["uid"]}) > 0:
                     userObj.send_text_message("Account already exists")
@@ -91,6 +84,7 @@ class MumbleInstance():
                 self.createAccount(content["uid"], userObj.get_property("user_id"))
                 shared.v.app.db.tokens.delete_many({"uid" : content["uid"]})
                 userObj.send_text_message("Account created.")
+                userObj.send_text_message("Please leave and join the server for syncing to occur.")
         else:
             userObj.send_text_message("Token is invalid.")
 
@@ -125,7 +119,6 @@ class MumbleInstance():
                 allowedPerms.append(data["groupName"])
 
         root = self.instance.channels[0]
-        root.get_acl()
 
         #they need to be moved to root and back or they can't remove perms. Yes it's stupid.
         oldChannel = self.get_channel_by_id(self.get_user_by_id(account["mumbleID"]).get_property("channel_id"))
@@ -141,22 +134,14 @@ class MumbleInstance():
             await asyncio.sleep(0.1)
             
             if link["groupName"] in allowedPerms:
-                root.acl.add_user(link["groupName"], account["mumbleID"])
+                self.add_user(root, link["groupName"], account["mumbleID"])
                 logger.log(f"Adding user {account['mumbleID']} mumble side, {account['discordID']} discord with {link['groupName']}")
-                root.get_acl()
             else:
                 logger.log(f"Removing user {account['mumbleID']} mumble side, {account['discordID']} discord with {link['groupName']}")
 
-                try:
-                    root.acl.del_user(link["groupName"], account["mumbleID"])
-                    await asyncio.sleep(0.1)
-                    logger.log("Removed")
-                except ValueError:
-                    logger.log("User already didn't have perm... continuing")
-                    continue
-
-                
-                root.get_acl()
+                self.del_user(root, link["groupName"], account["mumbleID"])
+                await asyncio.sleep(0.1)
+                logger.log("Removed")
 
         if changedChannel:
             oldChannel.move_in(self.get_user_by_id(account["mumbleID"]).get_property("session"))
@@ -164,6 +149,8 @@ class MumbleInstance():
         endTime = time.time()
 
         logger.log("Sync completed in " + str(1000 *(endTime - startTime)) + "ms")
+
+        self.get_user_by_id(account["mumbleID"]).send_text_message("Sync complete.")
 
     def get_user_by_id(self, _id):
         for u in self.instance.users:
