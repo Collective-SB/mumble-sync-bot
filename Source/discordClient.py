@@ -220,13 +220,3 @@ class PermLinks(commands.Cog):
         shared.v.app.db.links.delete_many(query)
 
         await ctx.send(diffify("Done"))
-
-    @holds("mumbleManager")
-    @commands.command()
-    async def addToGroup(self, ctx):
-        shared.v.app.mumbleInstance.addToGroup("tempgroup", 45)
-
-    @holds("mumbleManager")
-    @commands.command()
-    async def removeFromGroup(self, ctx):
-        shared.v.app.mumbleInstance.removeFromGroup("tempgroup", 45)

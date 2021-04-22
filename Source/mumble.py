@@ -131,7 +131,7 @@ class MumbleInstance():
                     await asyncio.sleep(0.1)
                     logger.log(f"Moving user {account['mumbleID']} into root channel to allow for permission assignment")
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.3)
             
             if link["groupName"] in allowedPerms:
                 self.add_user(root, link["groupName"], account["mumbleID"])
