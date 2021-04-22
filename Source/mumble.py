@@ -1,4 +1,4 @@
-import pymumble.pymumble_py3 as pymumble
+import pymumbleinternal.pymumble_py3 as pymumble
 import asyncio
 import shared
 import time
