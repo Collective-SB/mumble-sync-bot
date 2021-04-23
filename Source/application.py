@@ -26,13 +26,13 @@ class Application():
         load_dotenv()
         self.perms = ["admin", "mumbleManager"]
         self.db = database.DB(self.get_config("mongoUrl"))
+        self.config = database.Configuration()
         self.init_perms()
         self.discordToken = self.get_config("discordToken")
         self.ip = self.get_config("mumbleIP")
         self.nick = self.get_config("mumbleNick")
         self.mumbleInstance = mumble.MumbleInstance(self.ip, self.nick)
-        self.operatingDiscord = self.get_config("operatingDiscord")
-        self.config = database.Configuration()
+        self.operatingDiscord = self.config.get("operatingDiscord")
 
     def start(self):
         discordClient.client.loop.create_task(self.mumbleInstance.start())
