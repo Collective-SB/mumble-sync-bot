@@ -14,10 +14,6 @@ class DB():
         self.links = self.db["links"]
         self.configs = self.db["configs"]
 
-        if self.hasInit.count({}) == 0:
-            logger.log("Doing initial db init")
-            self.hasInit.insert_one({"hasInit" : False}, {"hasInit" : True})
-
 class Config():
     def __init__(self, key, default):
         self.key = key
