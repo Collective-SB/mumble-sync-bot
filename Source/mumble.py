@@ -36,12 +36,14 @@ class MumbleInstance():
         logger.log("Received ACL change for event " + str(event))
 
     def on_join(self, event):
+        print(str(event))
         logger.log("Join Event: " + str(event))
 
-        uid = event["user_id"]
+        uid = event.get("user_id")
 
         self.get_user_by_id(uid).send_text_message(shared.v.app.config.get("welcomeMessage"))
-        discordClient.client.loop.create_task(self.sync(mumbleID=uid))
+        if uid:
+            discordClient.client.loop.create_task(self.sync(mumbleID=uid))
 
     def del_user(self, channel, group, uid):
         Thread(target=channel.acl.del_user, args=(group, uid)).start()

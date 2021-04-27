@@ -121,6 +121,11 @@ Here is your token. DM it to the Mumble bot 'BridgeBot9000':
 Keep it safe and **do not share it.**
 """)
 
+    @commands.command()
+    async def deleteAccount(self, ctx):
+        count = shared.v.app.db.accounts.delete_many({"discordID" : str(ctx.author.id)})
+        await ctx.send(diffify(f"{str(count.deleted_count)} account deleted."))
+
 class Permissions(commands.Cog):
     def __init__(self, client):
         self.client = client
